@@ -1,0 +1,111 @@
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+    <!-- Endpoints -->
+
+    <bean name="/employee.xml"
+          class="com.softwire.training.shipit.controller.EmployeeController">
+        <property name="employeeDAO" ref="employeeDAO"/>
+        <property name="transactionManager" ref="transactionManager"/>
+        <property name="supportedMethods" value="POST,GET"/>
+    </bean>
+
+    <bean name="/product.xml"
+          class="com.softwire.training.shipit.controller.ProductController">
+        <property name="productDAO" ref="productDAO"/>
+        <property name="transactionManager" ref="transactionManager"/>
+        <property name="supportedMethods" value="POST,GET"/>
+    </bean>
+
+    <bean name="/company.xml"
+          class="com.softwire.training.shipit.controller.CompanyController">
+        <property name="companyDAO" ref="companyDAO"/>
+        <property name="transactionManager" ref="transactionManager"/>
+        <property name="supportedMethods" value="POST,GET"/>
+    </bean>
+
+    <bean name="/inboundOrder.xml"
+          class="com.softwire.training.shipit.controller.InboundOrderController">
+        <property name="productDAO" ref="productDAO"/>
+        <property name="stockDAO" ref="stockDAO"/>
+        <property name="employeeDAO" ref="employeeDAO"/>
+        <property name="companyDAO" ref="companyDAO"/>
+        <property name="transactionManager" ref="transactionManager"/>
+        <property name="supportedMethods" value="POST,GET"/>
+    </bean>
+
+    <bean name="/outboundOrder.xml"
+          class="com.softwire.training.shipit.controller.OutboundOrderController">
+        <property name="productDAO" ref="productDAO"/>
+        <property name="stockDAO" ref="stockDAO"/>
+        <property name="transactionManager" ref="transactionManager"/>
+        <property name="supportedMethods" value="POST,GET"/>
+    </bean>
+
+    <bean name="/status.xml"
+          class="com.softwire.training.shipit.controller.StatusController">
+        <property name="productDAO" ref="productDAO"/>
+        <property name="stockDAO" ref="stockDAO"/>
+        <property name="employeeDAO" ref="employeeDAO"/>
+        <property name="companyDAO" ref="companyDAO"/>
+        <property name="transactionManager" ref="transactionManager"/>
+        <property name="supportedMethods" value="GET"/>
+    </bean>
+
+    <bean name="/"
+          class="com.softwire.training.shipit.controller.HomePageController">
+        <property name="supportedMethods" value="GET"/>
+    </bean>
+
+    <!-- DAOs -->
+
+    <bean id="employeeDAO" class="com.softwire.training.shipit.dao.impl.EmployeeDAOImpl">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <bean id="productDAO" class="com.softwire.training.shipit.dao.impl.ProductDAOImpl">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <bean id="stockDAO" class="com.softwire.training.shipit.dao.impl.StockDAOImpl">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <bean id="companyDAO" class="com.softwire.training.shipit.dao.impl.CompanyDAOImpl">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!-- Common -->
+
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+
+        <property name="url" value="${JDBC_CONNECTION_STRING}"/>
+        <property name="username" value="root"/>
+        <property name="password" value="${MYSQL_PASSWORD}"/>
+
+        <property name="initialSize" value="3"/>
+        <property name="maxActive" value="10"/>
+    </bean>
+
+    <bean id="transactionManager"
+          class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <bean id="propertyPlaceholderConfigurer"
+          class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_OVERRIDE"/>
+        <property name="searchSystemEnvironment" value="true"/>
+    </bean>
+
+    <bean id="viewResolver"
+          class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/pages/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+    <bean class="com.softwire.training.shipit.common.HandlerExceptionResolver"/>
+</beans>

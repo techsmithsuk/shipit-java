@@ -1,0 +1,73 @@
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+    <!-- Controllers -->
+
+    <bean id="employeeController" class="com.softwire.training.shipit.controller.EmployeeController">
+        <property name="employeeDAO" ref="employeeDAO"/>
+        <property name="transactionManager" ref="transactionManager"/>
+    </bean>
+
+    <bean id="productController" class="com.softwire.training.shipit.controller.ProductController">
+        <property name="productDAO" ref="productDAO"/>
+        <property name="transactionManager" ref="transactionManager"/>
+    </bean>
+
+    <bean id="companyController" class="com.softwire.training.shipit.controller.CompanyController">
+        <property name="companyDAO" ref="companyDAO"/>
+        <property name="transactionManager" ref="transactionManager"/>
+    </bean>
+
+    <bean id="inboundOrderController" class="com.softwire.training.shipit.controller.InboundOrderController">
+        <property name="productDAO" ref="productDAO"/>
+        <property name="stockDAO" ref="stockDAO"/>
+        <property name="employeeDAO" ref="employeeDAO"/>
+        <property name="companyDAO" ref="companyDAO"/>
+        <property name="transactionManager" ref="transactionManager"/>
+    </bean>
+
+    <bean id="outboundOrderController" class="com.softwire.training.shipit.controller.OutboundOrderController">
+        <property name="productDAO" ref="productDAO"/>
+        <property name="stockDAO" ref="stockDAO"/>
+        <property name="transactionManager" ref="transactionManager"/>
+    </bean>
+
+    <!-- DAOs -->
+
+    <bean id="employeeDAO" class="com.softwire.training.shipit.dao.impl.EmployeeDAOImpl">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <bean id="productDAO" class="com.softwire.training.shipit.dao.impl.ProductDAOImpl">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <bean id="stockDAO" class="com.softwire.training.shipit.dao.impl.StockDAOImpl">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <bean id="companyDAO" class="com.softwire.training.shipit.dao.impl.CompanyDAOImpl">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!-- Common -->
+
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+
+        <property name="url" value="jdbc:mysql://localhost:3306/shipit_testdb"/>
+        <property name="username" value="root"/>
+        <property name="password" value="mysql"/>
+
+        <property name="initialSize" value="3"/>
+        <property name="maxActive" value="10"/>
+    </bean>
+
+    <bean id="transactionManager"
+          class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+</beans>
