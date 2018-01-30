@@ -1,5 +1,6 @@
 package com.softwire.training.shipit;
 
+import com.softwire.training.shipit.builder.CompanyBuilder;
 import com.softwire.training.shipit.builder.EmployeeBuilder;
 import com.softwire.training.shipit.builder.ProductBuilder;
 import com.softwire.training.shipit.controller.ProductController;
@@ -51,6 +52,7 @@ public class ProductTest extends AbstractBaseTest
     {
         super.onSetUp();
         employeeDAO.addEmployees(Collections.singletonList(EMPLOYEE));
+        companyDAO.addCompanies(Collections.singletonList(new CompanyBuilder().createCompany()));
     }
 
     public void testXMLParsingAndRendering() throws Exception

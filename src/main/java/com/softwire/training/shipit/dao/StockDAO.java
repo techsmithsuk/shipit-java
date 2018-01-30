@@ -8,7 +8,7 @@ import java.util.Map;
 
 public interface StockDAO
 {
-    List<Stock> getStock(int warehouseId);
+    List<StockAndProduct> getStockBelowThreshold(int warehouseId);
 
     int getTrackedItemsCount();
 
@@ -21,4 +21,5 @@ public interface StockDAO
     Map<Integer, Stock> getStock(int warehouseId, List<Integer> productIds);
 
     Stock getStock(int warehouseId, Integer productId);
+
 }

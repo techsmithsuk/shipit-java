@@ -2,6 +2,7 @@ package com.softwire.training.shipit.dao.impl;
 
 import com.softwire.training.shipit.dao.CompanyDAO;
 import com.softwire.training.shipit.model.Company;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
 import org.springframework.jdbc.core.simple.SimpleJdbcTemplate;
@@ -9,8 +10,7 @@ import org.springframework.jdbc.core.simple.SimpleJdbcTemplate;
 import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class CompanyDAOImpl implements CompanyDAO
 {
@@ -50,6 +50,25 @@ public class CompanyDAOImpl implements CompanyDAO
         {
             return null;
         }
+    }
+
+    public Map<String, Company> getCompanies(List<String> gcps)
+    {
+        if (gcps.isEmpty())
+        {
+            return Collections.emptyMap();
+        }
+
+        String sql = String.format("SELECT gcp_cd, gln_nm, gln_addr_02, gln_addr_03, gln_addr_04, " +
+                "gln_addr_postalcode, gln_addr_city, contact_tel, contact_mail FROM gcp WHERE gcp_cd IN (%s)", StringUtils.join(gcps, ","));
+        List<Company> companies = simpleJdbcTemplate.query(sql, MAPPER);
+
+        Map<String, Company> companiesByGCP = new HashMap<String, Company>(companies.size());
+        for (Company company : companies)
+        {
+            companiesByGCP.put(company.getGcp(), company);
+        }
+        return companiesByGCP;
     }
 
     public void addCompanies(List<Company> companies)

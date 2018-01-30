@@ -81,27 +81,34 @@ public class InboundOrderController extends BaseController
         Employee operationsManager = operationsManagers.get(0);
         sLog.debug(String.format("Found operations manager: %s", operationsManager));
 
-        List<Stock> allStock = stockDAO.getStock(warehouseId);
+        List<StockAndProduct> stockBelowThreshold = stockDAO.getStockBelowThreshold(warehouseId);
+
+        List<String> gcps = new ArrayList<String>();
+        for (StockAndProduct stockAndProduct : stockBelowThreshold)
+        {
+            gcps.add(stockAndProduct.getProduct().getGcp());
+        }
+        Map<String, Company> companies = companyDAO.getCompanies(gcps);
 
         Map<Company, List<InboundOrderLine>> orderlinesByCompany = new HashMap<Company, List<InboundOrderLine>>();
 
-        for (Stock item : allStock)
+        for (StockAndProduct stockAndProduct : stockBelowThreshold)
         {
-            Product product = productDAO.getProduct(item.getProductId());
-            if (item.getHeld() < product.getLowerThreshold() && !product.isDiscontinued())
+            Stock stock = stockAndProduct.getStock();
+            Product product = stockAndProduct.getProduct();
+            Company company = companies.get(product.getGcp());
+
+            int orderQuantity = NumberUtils.max(
+                    product.getLowerThreshold() * 3 - stock.getHeld(), product.getMinimumOrderQuantity());
+
+            if (!orderlinesByCompany.containsKey(company))
             {
-                Company company = companyDAO.getCompany(product.getGcp());
-                int orderQuantity = NumberUtils.max(
-                        product.getLowerThreshold() * 3 - item.getHeld(), product.getMinimumOrderQuantity());
-
-                if (!orderlinesByCompany.containsKey(company))
-                {
-                    orderlinesByCompany.put(company, new ArrayList<InboundOrderLine>());
-                }
-
-                orderlinesByCompany.get(company).add(
-                        new InboundOrderLine(product.getGtin(), product.getName(), orderQuantity));
+                orderlinesByCompany.put(company, new ArrayList<InboundOrderLine>());
             }
+
+            orderlinesByCompany.get(company).add(
+                    new InboundOrderLine(product.getGtin(), product.getName(), orderQuantity));
+
         }
 
         sLog.debug(String.format("Constructed order lines: %s", orderlinesByCompany));

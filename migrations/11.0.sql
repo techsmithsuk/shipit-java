@@ -1,0 +1,3 @@
+ALTER TABLE gcp ADD PRIMARY KEY (gcp_cd);
+ALTER TABLE gtin ADD FOREIGN KEY (gcp_cd) REFERENCES gcp (gcp_cd);
+ALTER TABLE gtin ADD UNIQUE INDEX gtin_cd_UNIQUE (gtin_cd ASC);

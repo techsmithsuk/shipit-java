@@ -39,8 +39,8 @@ public class OutboundOrderTest extends AbstractBaseTest
         employeeDAO.addEmployees(Collections.singletonList(EMPLOYEE));
         product = new ProductBuilder().createProduct();
         gtin = product.getGtin();
-        productDAO.addProducts(Collections.singletonList(product));
         companyDAO.addCompanies(Collections.singletonList(new CompanyBuilder().createCompany()));
+        productDAO.addProducts(Collections.singletonList(product));
     }
 
     public void testParseOutboundOrder() throws Exception
