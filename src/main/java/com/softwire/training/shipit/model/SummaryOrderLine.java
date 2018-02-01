@@ -5,13 +5,13 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-public class InboundOrderLine implements RenderableAsXML
+public class SummaryOrderLine implements RenderableAsXML
 {
     private String gtin;
     private String name;
     private int quantity;
 
-    public InboundOrderLine(String gtin, String name, int quantity)
+    public SummaryOrderLine(String gtin, String name, int quantity)
     {
         this.gtin = gtin;
         this.name = name;
@@ -37,6 +37,7 @@ public class InboundOrderLine implements RenderableAsXML
                 "</orderLine>";
     }
 
+    @Override
     public boolean equals(Object o)
     {
         if (this == o)
@@ -49,15 +50,16 @@ public class InboundOrderLine implements RenderableAsXML
             return false;
         }
 
-        InboundOrderLine inboundOrderLine = (InboundOrderLine) o;
+        SummaryOrderLine summaryOrderLine = (SummaryOrderLine) o;
 
         return new EqualsBuilder()
-                .append(quantity, inboundOrderLine.quantity)
-                .append(gtin, inboundOrderLine.gtin)
-                .append(name, inboundOrderLine.name)
+                .append(quantity, summaryOrderLine.quantity)
+                .append(gtin, summaryOrderLine.gtin)
+                .append(name, summaryOrderLine.name)
                 .isEquals();
     }
 
+    @Override
     public int hashCode()
     {
         return new HashCodeBuilder(17, 37)
@@ -67,6 +69,7 @@ public class InboundOrderLine implements RenderableAsXML
                 .toHashCode();
     }
 
+    @Override
     public String toString()
     {
         return new ToStringBuilder(this)

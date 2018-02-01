@@ -6,6 +6,7 @@ import com.softwire.training.shipit.dao.StockDAO;
 import com.softwire.training.shipit.exception.InsufficientStockException;
 import com.softwire.training.shipit.exception.NoSuchEntityException;
 import com.softwire.training.shipit.model.*;
+import com.softwire.training.shipit.utils.OutboundOrderManifestCreator;
 import com.softwire.training.shipit.utils.TransactionManagerUtils;
 import com.softwire.training.shipit.utils.XMLParsingUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -27,6 +28,7 @@ public class OutboundOrderController extends BaseController
 
     private StockDAO stockDAO;
     private ProductDAO productDAO;
+    private OutboundOrderManifestCreator outboundOrderManifestCreator;
 
     public void setStockDAO(StockDAO stockDAO)
     {
@@ -36,6 +38,11 @@ public class OutboundOrderController extends BaseController
     public void setProductDAO(ProductDAO productDAO)
     {
         this.productDAO = productDAO;
+    }
+
+    public void setOutboundOrderManifestCreator(OutboundOrderManifestCreator outboundOrderManifestCreator)
+    {
+        this.outboundOrderManifestCreator = outboundOrderManifestCreator;
     }
 
     protected RenderableAsXML handlePostMethod(
@@ -48,35 +55,22 @@ public class OutboundOrderController extends BaseController
 
         sLog.info(String.format("Processing outbound order: %s", outboundOrder));
 
-        List<String> gtins = new ArrayList<String>();
-        for (OrderLine orderLine : outboundOrder.getOrderLines())
-        {
-            gtins.add(orderLine.getGtin());
-        }
-        Map<String, Product> products = productDAO.getProductsByGtin(gtins);
+        Map<String, Product> products = retrieveProducts(outboundOrder);
+        OutboundOrderManifest outboundOrderManifest = outboundOrderManifestCreator.create(outboundOrder, products);
+        processOutboundOrder(outboundOrder, products);
+        return outboundOrderManifest;
+    }
 
+    private void processOutboundOrder(OutboundOrder outboundOrder, Map<String, Product> products) throws Exception
+    {
         List<StockAlteration> lineItems = new ArrayList<StockAlteration>();
         List<Integer> productIds = new ArrayList<Integer>();
-        List<String> errors = new ArrayList<String>();
         for (OrderLine orderLine : outboundOrder.getOrderLines())
         {
             Product product = products.get(orderLine.getGtin());
-
-            if (product == null)
-            {
-                errors.add(String.format("Unknown product: %s", orderLine.getGtin()));
-            }
-            else
-            {
-                Integer productId = product.getId();
-                lineItems.add(new StockAlteration(productId, orderLine.getQuantity()));
-                productIds.add(productId);
-            }
-        }
-
-        if (errors.size() > 0)
-        {
-            throw new NoSuchEntityException(StringUtils.join(errors, "; "));
+            Integer productId = product.getId();
+            lineItems.add(new StockAlteration(productId, orderLine.getQuantity()));
+            productIds.add(productId);
         }
 
         TransactionStatus txStatus = transactionManager.getTransaction(
@@ -85,7 +79,7 @@ public class OutboundOrderController extends BaseController
         {
             Map<Integer, Stock> stock = stockDAO.getStock(outboundOrder.getWarehouseId(), productIds);
 
-            errors = new ArrayList<String>();
+            List<String> errors = new ArrayList<String>();
             for (int i = 0; i < lineItems.size(); i++)
             {
                 StockAlteration lineItem = lineItems.get(i);
@@ -116,7 +110,24 @@ public class OutboundOrderController extends BaseController
             TransactionManagerUtils.rollbackIgnoringErrors(transactionManager, txStatus, sLog);
             throw e;
         }
+    }
 
-        return null;
+    private Map<String, Product> retrieveProducts(OutboundOrder outboundOrder) throws NoSuchEntityException
+    {
+        List<String> gtins = new ArrayList<String>();
+        for (OrderLine orderLine : outboundOrder.getOrderLines())
+        {
+            gtins.add(orderLine.getGtin());
+        }
+
+        Map<String, Product> productsByGtin = productDAO.getProductsByGtin(gtins);
+
+        gtins.removeAll(productsByGtin.keySet());
+        if (gtins.size() > 0)
+        {
+            throw new NoSuchEntityException(String.format("Unknown products: %s", StringUtils.join(gtins)));
+        }
+
+        return productsByGtin;
     }
 }

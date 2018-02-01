@@ -8,10 +8,7 @@ import com.softwire.training.shipit.dao.StockAlteration;
 import com.softwire.training.shipit.exception.InsufficientStockException;
 import com.softwire.training.shipit.exception.NoSuchEntityException;
 import com.softwire.training.shipit.exception.ValidationException;
-import com.softwire.training.shipit.model.Employee;
-import com.softwire.training.shipit.model.OrderLine;
-import com.softwire.training.shipit.model.OutboundOrder;
-import com.softwire.training.shipit.model.Product;
+import com.softwire.training.shipit.model.*;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
@@ -68,9 +65,13 @@ public class OutboundOrderTest extends AbstractBaseTest
                 "</orderLines>" +
                 "</outboundOrder>");
 
-        assertEmptySuccessResponse(outboundOrderController.handleRequest(request, new MockHttpServletResponse()));
+        OutboundOrderManifest outboundOrderManifest = assertSuccessResponseAndReturnContent(
+                outboundOrderController.handleRequest(request, new MockHttpServletResponse()),
+                OutboundOrderManifest.class);
 
         assertEquals(stockDAO.getStock(1, product.getId()).getHeld(), 7);
+        assertEquals(outboundOrderManifest.getTrucks().size(), 1);
+        assertEquals(outboundOrderManifest.getTrucks().get(0).getOrderLines().get(0).getGtin(), gtin);
     }
 
     public void testOutboundOrderInsufficientStock() throws Exception
@@ -102,7 +103,7 @@ public class OutboundOrderTest extends AbstractBaseTest
         MockHttpServletRequest request = createPostRequest("<outboundOrder>" +
                 "<warehouseId>1</warehouseId>" +
                 "<orderLines>" +
-                "<orderLine><gtin>0000346374230</gtin><quantity>10000</quantity></orderLine>" +
+                "<orderLine><gtin>0000346374230</gtin><quantity>10</quantity></orderLine>" +
                 "</orderLines>" +
                 "</outboundOrder>");
 

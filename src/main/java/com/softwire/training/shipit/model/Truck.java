@@ -6,40 +6,43 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.List;
 
-public class OrderSegment implements RenderableAsXML
+public class Truck implements RenderableAsXML
 {
-    private Company company;
-    private List<SummaryOrderLine> summaryOrderLines;
+    private List<SummaryOrderLine> orderLines;
+    private int weightInKg;
 
-    public OrderSegment(Company company, List<SummaryOrderLine> summaryOrderLines)
+    public Truck(List<SummaryOrderLine> orderLines, int weightInKg)
     {
-        this.company = company;
-        this.summaryOrderLines = summaryOrderLines;
+        this.orderLines = orderLines;
+        this.weightInKg = weightInKg;
     }
 
-    public Company getCompany()
+    public List<SummaryOrderLine> getOrderLines()
     {
-        return company;
+        return orderLines;
     }
 
-    public List<SummaryOrderLine> getSummaryOrderLines()
+    public int getWeightInKg()
     {
-        return summaryOrderLines;
+        return weightInKg;
     }
 
     public String renderXML()
     {
         StringBuilder renderedOrderLines = new StringBuilder();
-        for (SummaryOrderLine summaryOrderLine : summaryOrderLines)
+
+        for (SummaryOrderLine orderLine : orderLines)
         {
-            renderedOrderLines.append(summaryOrderLine.renderXML());
+            renderedOrderLines.append(orderLine.renderXML());
         }
-        return "<segment>" +
-                company.renderXML() +
+
+        return "<truck>" +
+                "<weightInKg>" + weightInKg + "</weightInKg>" +
                 "<orderLines>" + renderedOrderLines.toString() + "</orderLines>" +
-                "</segment>";
+                "</truck>";
     }
 
+    @Override
     public boolean equals(Object o)
     {
         if (this == o)
@@ -52,27 +55,29 @@ public class OrderSegment implements RenderableAsXML
             return false;
         }
 
-        OrderSegment that = (OrderSegment) o;
+        Truck truck = (Truck) o;
 
         return new EqualsBuilder()
-                .append(company, that.company)
-                .append(summaryOrderLines, that.summaryOrderLines)
+                .append(weightInKg, truck.weightInKg)
+                .append(orderLines, truck.orderLines)
                 .isEquals();
     }
 
+    @Override
     public int hashCode()
     {
         return new HashCodeBuilder(17, 37)
-                .append(company)
-                .append(summaryOrderLines)
+                .append(orderLines)
+                .append(weightInKg)
                 .toHashCode();
     }
 
+    @Override
     public String toString()
     {
         return new ToStringBuilder(this)
-                .append("company", company)
-                .append("orderLines", summaryOrderLines)
+                .append("orderLines", orderLines)
+                .append("weightInKg", weightInKg)
                 .toString();
     }
 }

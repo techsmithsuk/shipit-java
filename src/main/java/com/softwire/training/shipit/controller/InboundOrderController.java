@@ -90,7 +90,7 @@ public class InboundOrderController extends BaseController
         }
         Map<String, Company> companies = companyDAO.getCompanies(gcps);
 
-        Map<Company, List<InboundOrderLine>> orderlinesByCompany = new HashMap<Company, List<InboundOrderLine>>();
+        Map<Company, List<SummaryOrderLine>> orderlinesByCompany = new HashMap<Company, List<SummaryOrderLine>>();
 
         for (StockAndProduct stockAndProduct : stockBelowThreshold)
         {
@@ -103,19 +103,19 @@ public class InboundOrderController extends BaseController
 
             if (!orderlinesByCompany.containsKey(company))
             {
-                orderlinesByCompany.put(company, new ArrayList<InboundOrderLine>());
+                orderlinesByCompany.put(company, new ArrayList<SummaryOrderLine>());
             }
 
             orderlinesByCompany.get(company).add(
-                    new InboundOrderLine(product.getGtin(), product.getName(), orderQuantity));
+                    new SummaryOrderLine(product.getGtin(), product.getName(), orderQuantity));
 
         }
 
         sLog.debug(String.format("Constructed order lines: %s", orderlinesByCompany));
 
-        Set<Map.Entry<Company, List<InboundOrderLine>>> entrySet = orderlinesByCompany.entrySet();
+        Set<Map.Entry<Company, List<SummaryOrderLine>>> entrySet = orderlinesByCompany.entrySet();
         List<OrderSegment> segments = new ArrayList<OrderSegment>(entrySet.size());
-        for (Map.Entry<Company, List<InboundOrderLine>> entry : entrySet)
+        for (Map.Entry<Company, List<SummaryOrderLine>> entry : entrySet)
         {
             segments.add(new OrderSegment(entry.getKey(), entry.getValue()));
         }

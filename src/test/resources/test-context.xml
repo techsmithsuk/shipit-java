@@ -32,6 +32,7 @@
         <property name="productDAO" ref="productDAO"/>
         <property name="stockDAO" ref="stockDAO"/>
         <property name="transactionManager" ref="transactionManager"/>
+        <property name="outboundOrderManifestCreator" ref="outboundOrderManifestCreator"/>
     </bean>
 
     <!-- DAOs -->
@@ -69,5 +70,8 @@
           class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
         <property name="dataSource" ref="dataSource"/>
     </bean>
+
+    <bean id="outboundOrderManifestCreator"
+          class="com.softwire.training.shipit.utils.OutboundOrderManifestCreator"/>
 
 </beans>
