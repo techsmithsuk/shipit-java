@@ -11,13 +11,15 @@ import org.w3c.dom.Element;
 
 public class Employee implements RenderableAsXML
 {
+    private Integer id;
     private String name;
     private int warehouseId;
     private EmployeeRole role;
     private String ext;
 
-    public Employee(String name, int warehouseId, EmployeeRole role, String ext)
+    public Employee(Integer id, String name, int warehouseId, EmployeeRole role, String ext)
     {
+        this.id = id;
         this.name = name;
         this.warehouseId = warehouseId;
         this.role = role;
@@ -34,7 +36,7 @@ public class Employee implements RenderableAsXML
         Employee employee;
         try
         {
-            employee = new Employee(name, warehouseId, EmployeeRole.valueOf(role), ext);
+            employee = new Employee(null, name, warehouseId, EmployeeRole.valueOf(role), ext);
         }
         catch (IllegalArgumentException e)
         {
@@ -44,6 +46,11 @@ public class Employee implements RenderableAsXML
         (new EmployeeValidator()).validate(employee);
 
         return employee;
+    }
+
+    public Integer getId()
+    {
+        return id;
     }
 
     public String getName()
@@ -70,12 +77,13 @@ public class Employee implements RenderableAsXML
     {
         return String.format(
                 "<employee>" +
+                        "<id>%s</id>" +
                         "<name>%s</name>" +
                         "<warehouseId>%d</warehouseId>" +
                         "<role>%s</role>" +
                         "<ext>%s</ext>" +
                         "</employee>",
-                name, warehouseId, role, ext);
+                id, name, warehouseId, role, ext);
     }
 
     public boolean equals(Object o)
@@ -93,6 +101,7 @@ public class Employee implements RenderableAsXML
         Employee employee = (Employee) o;
 
         return new EqualsBuilder()
+                .append(id, employee.id)
                 .append(warehouseId, employee.warehouseId)
                 .append(name, employee.name)
                 .append(role, employee.role)
@@ -103,6 +112,7 @@ public class Employee implements RenderableAsXML
     public int hashCode()
     {
         return new HashCodeBuilder(17, 37)
+                .append(id)
                 .append(name)
                 .append(warehouseId)
                 .append(role)
@@ -113,6 +123,7 @@ public class Employee implements RenderableAsXML
     public String toString()
     {
         return new ToStringBuilder(this)
+                .append("id", id)
                 .append("name", name)
                 .append("warehouseId", warehouseId)
                 .append("role", role)

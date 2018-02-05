@@ -3,6 +3,7 @@ package com.softwire.training.shipit.controller;
 import com.softwire.training.shipit.dao.EmployeeDAO;
 import com.softwire.training.shipit.exception.ClientVisibleException;
 import com.softwire.training.shipit.exception.MalformedRequestException;
+import com.softwire.training.shipit.exception.MultipleEntitiesException;
 import com.softwire.training.shipit.exception.NoSuchEntityException;
 import com.softwire.training.shipit.model.Employee;
 import com.softwire.training.shipit.model.Employees;
@@ -11,6 +12,7 @@ import com.softwire.training.shipit.utils.TransactionManagerUtils;
 import com.softwire.training.shipit.utils.XMLParsingUtils;
 import org.apache.log4j.Logger;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.web.bind.ServletRequestBindingException;
@@ -40,10 +42,10 @@ public class EmployeeController extends BaseController
             HttpServletRequest request,
             HttpServletResponse response) throws Exception
     {
-        Node employees = XMLParsingUtils.getSingleElementByTagName(documentElement, "employees");
+        Node employeesNode = XMLParsingUtils.getSingleElementByTagName(documentElement, "employees");
 
-        List<Employee> employeesToAdd = new ArrayList<Employee>();
-        NodeList employeeNodes = employees.getChildNodes();
+        List<Employee> employees = new ArrayList<Employee>();
+        NodeList employeeNodes = employeesNode.getChildNodes();
         for (int i = 0; i < employeeNodes.getLength(); i++)
         {
             Node node = employeeNodes.item(i);
@@ -52,20 +54,20 @@ public class EmployeeController extends BaseController
                 continue;
             }
 
-            employeesToAdd.add(Employee.parseXML((Element) node));
+            employees.add(Employee.parseXML((Element) node));
         }
 
-        if (employeesToAdd.size() == 0)
+        if (employees.size() == 0)
         {
             throw new MalformedRequestException("Expected at least one <employee> tag");
         }
 
-        sLog.info("Adding employees: " + employeesToAdd);
+        sLog.info("Adding employees: " + employees);
 
         TransactionStatus txStatus = transactionManager.getTransaction(new DefaultTransactionDefinition());
         try
         {
-            employeeDAO.addEmployees(employeesToAdd);
+            employeeDAO.addEmployees(employees);
             transactionManager.commit(txStatus);
         }
         catch (Exception e)
@@ -76,12 +78,12 @@ public class EmployeeController extends BaseController
 
         sLog.debug("Employees added successfully");
 
-        return null;
+        return new Employees(employees);
     }
 
     protected RenderableAsXML handleGetMethod(
             HttpServletRequest request,
-            HttpServletResponse response) throws ClientVisibleException, ServletRequestBindingException
+            HttpServletResponse response) throws Exception
     {
         String action = ServletRequestUtils.getStringParameter(request, "action");
 
@@ -103,34 +105,44 @@ public class EmployeeController extends BaseController
             throws ServletRequestBindingException, ClientVisibleException
     {
         String name = ServletRequestUtils.getStringParameter(request, "name");
+        Integer employeeId = ServletRequestUtils.getIntParameter(request, "employeeId");
         Integer warehouseId = ServletRequestUtils.getIntParameter(request, "warehouseId");
 
-        if (name == null && warehouseId == null)
+        if (employeeId == null && warehouseId == null && name == null)
         {
-            throw new MalformedRequestException("Unable to parse name or warehouse from request parameters");
+            throw new MalformedRequestException(
+                    "Unable to parse employeeId, warehouseId, or name from request parameters");
         }
-        if (name != null && warehouseId != null)
+        if ((employeeId != null && warehouseId != null) ||
+                (employeeId != null && name != null) ||
+                (name != null && warehouseId != null))
         {
-            throw new MalformedRequestException("Only one of name and warehouse id is valid on this request");
+            throw new MalformedRequestException(
+                    "Only one of employeeId warehouseId, and name is valid on this request");
         }
 
-        sLog.info(String.format("Looking up employee by name: %s or id: %d", name, warehouseId));
-
-        List<Employee> employees;
         if (name != null)
         {
-
-            Employee employee = employeeDAO.getEmployee(name);
+            sLog.info(String.format("Looking up employee by name: %s", name));
+            Employee employee = getEmployeeByName(name);
+            sLog.info("Found employee: " + employee);
+            return employee;
+        }
+        else if (employeeId != null)
+        {
+            sLog.info(String.format("Looking up employee by employeeId: %s", employeeId));
+            Employee employee = employeeDAO.getEmployee(employeeId);
             if (employee == null)
             {
-                throw new NoSuchEntityException("No employee exists with name: " + name);
+                throw new NoSuchEntityException("No employee exists with employeeId: " + employeeId);
             }
             sLog.info("Found employee: " + employee);
             return employee;
         }
         else
         {
-            employees = employeeDAO.getEmployees(warehouseId);
+            sLog.info(String.format("Looking up employee by warehouseId: %s", warehouseId));
+            List<Employee> employees = employeeDAO.getEmployees(warehouseId);
             if (employees.isEmpty())
             {
                 throw new NoSuchEntityException("No employee exists with warehouseId: " + warehouseId);
@@ -141,24 +153,65 @@ public class EmployeeController extends BaseController
     }
 
     private RenderableAsXML handleDeleteAction(HttpServletRequest request)
-            throws ServletRequestBindingException, ClientVisibleException
+            throws Exception
     {
+        Integer employeeId = ServletRequestUtils.getIntParameter(request, "employeeId");
         String name = ServletRequestUtils.getStringParameter(request, "name");
-        if (name == null)
+
+        if (employeeId == null && name == null)
         {
-            throw new MalformedRequestException("Unable to parse name from request parameters");
+            throw new MalformedRequestException("Unable to parse employeeId or name from request parameters");
         }
 
-        try
+        if (employeeId != null && name != null)
         {
-            employeeDAO.removeEmployee(name);
-        }
-        catch (EmptyResultDataAccessException e)
-        {
-            throw new NoSuchEntityException("No employee exists with name: " + name, e);
+            throw new MalformedRequestException("Only one of employeeId and name is valid on this request");
         }
 
+        if (employeeId != null)
+        {
+            sLog.info(String.format("Deleting employee by employeeId: %s", employeeId));
+            try
+            {
+                employeeDAO.removeEmployee(employeeId);
+            }
+            catch (EmptyResultDataAccessException e)
+            {
+                throw new NoSuchEntityException("No employee exists with employeeId: " + employeeId, e);
+            }
+        }
+        else
+        {
+            sLog.info(String.format("Deleting employee by name: %s", name));
+            TransactionStatus txStatus = transactionManager.getTransaction(
+                    new DefaultTransactionDefinition(TransactionDefinition.ISOLATION_SERIALIZABLE));
+            try
+            {
+                Employee employee = getEmployeeByName(name);
+                employeeDAO.removeEmployee(employee.getId());
+                transactionManager.commit(txStatus);
+            }
+            catch (Exception e)
+            {
+                TransactionManagerUtils.rollbackIgnoringErrors(transactionManager, txStatus, sLog);
+                throw e;
+            }
+        }
         return null;
+    }
+
+    private Employee getEmployeeByName(String name) throws NoSuchEntityException, MultipleEntitiesException
+    {
+        List<Employee> employees = employeeDAO.getEmployeesByName(name);
+        if (employees.isEmpty())
+        {
+            throw new NoSuchEntityException("No employee exists with name: " + name);
+        }
+        else if (employees.size() > 1)
+        {
+            throw new MultipleEntitiesException("Multiple employees exist with name: " + name);
+        }
+        return employees.get(0);
     }
 
 }

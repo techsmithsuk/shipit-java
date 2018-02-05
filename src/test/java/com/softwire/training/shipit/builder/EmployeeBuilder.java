@@ -5,6 +5,7 @@ import com.softwire.training.shipit.model.EmployeeRole;
 
 public class EmployeeBuilder
 {
+    private Integer id = 1;
     private String name = "Gissell Sadeem";
     private int warehouseId = 1;
     private EmployeeRole role = EmployeeRole.OPERATIONS_MANAGER;
@@ -34,8 +35,14 @@ public class EmployeeBuilder
         return this;
     }
 
+    public EmployeeBuilder setId(Integer id)
+    {
+        this.id = id;
+        return this;
+    }
+
     public Employee createEmployee()
     {
-        return new Employee(name, warehouseId, role, ext);
+        return new Employee(id, name, warehouseId, role, ext);
     }
 }

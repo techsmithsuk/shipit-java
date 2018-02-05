@@ -8,15 +8,17 @@ import java.util.List;
 
 public interface EmployeeDAO
 {
-    Employee getEmployee(String name);
+    Employee getEmployee(int id);
+
+    List<Employee> getEmployeesByName(String name);
 
     List<Employee> getEmployees(int warehouseId);
 
     List<Employee> getEmployees(int warehouseId, EmployeeRole employeeRole);
 
-    void addEmployees(List<Employee> employee);
+    void addEmployees(List<Employee> employee) throws InvalidStateException;
 
-    void removeEmployee(String name) throws InvalidStateException;
+    void removeEmployee(int employeeId) throws InvalidStateException;
 
     int getEmployeeCount();
 

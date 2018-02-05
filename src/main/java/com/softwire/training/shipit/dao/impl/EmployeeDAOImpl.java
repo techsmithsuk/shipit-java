@@ -1,15 +1,22 @@
 package com.softwire.training.shipit.dao.impl;
 
+import com.mysql.jdbc.Statement;
 import com.softwire.training.shipit.dao.EmployeeDAO;
 import com.softwire.training.shipit.dao.EmployeeRoleMarshaller;
 import com.softwire.training.shipit.exception.InvalidStateException;
 import com.softwire.training.shipit.model.Employee;
 import com.softwire.training.shipit.model.EmployeeRole;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
 import org.springframework.jdbc.core.simple.SimpleJdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -21,7 +28,8 @@ public class EmployeeDAOImpl implements EmployeeDAO
     {
         public Employee mapRow(ResultSet rs, int rowNum) throws SQLException
         {
-            return new Employee(rs.getString("name"),
+            return new Employee(rs.getInt("employee_id"),
+                    rs.getString("name"),
                     rs.getInt("w_id"),
                     EmployeeRoleMarshaller.unmarshall(rs.getString("role")),
                     rs.getString("ext"));
@@ -29,18 +37,20 @@ public class EmployeeDAOImpl implements EmployeeDAO
     };
 
     private SimpleJdbcTemplate simpleJdbcTemplate;
+    private JdbcTemplate jdbcTemplate;
 
     public void setDataSource(DataSource dataSource)
     {
         simpleJdbcTemplate = new SimpleJdbcTemplate(dataSource);
+        jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
-    public Employee getEmployee(String name)
+    public Employee getEmployee(int id)
     {
-        String sql = "SELECT name, w_id, role, ext FROM em WHERE name = ?";
+        String sql = "SELECT employee_id, name, w_id, role, ext FROM em WHERE employee_id = ?";
         try
         {
-            return simpleJdbcTemplate.queryForObject(sql, MAPPER, name);
+            return simpleJdbcTemplate.queryForObject(sql, MAPPER, id);
         }
         catch (EmptyResultDataAccessException e)
         {
@@ -50,36 +60,54 @@ public class EmployeeDAOImpl implements EmployeeDAO
 
     public List<Employee> getEmployees(int warehouseId)
     {
-        String sql = "SELECT name, w_id, role, ext FROM em WHERE w_id = ?";
+        String sql = "SELECT employee_id, name, w_id, role, ext FROM em WHERE w_id = ?";
         return simpleJdbcTemplate.query(sql, MAPPER, warehouseId);
     }
 
     public List<Employee> getEmployees(int warehouseId, EmployeeRole employeeRole)
     {
-        String sql = "SELECT name, w_id, role, ext FROM em WHERE w_id = ? AND role = ?";
+        String sql = "SELECT employee_id, name, w_id, role, ext FROM em WHERE w_id = ? AND role = ?";
         return simpleJdbcTemplate.query(sql, MAPPER, warehouseId, EmployeeRoleMarshaller.marshall(employeeRole));
     }
 
-    public void addEmployees(final List<Employee> employees)
+    public List<Employee> getEmployeesByName(String name)
     {
-        String sql = "INSERT INTO em (name, w_id, role, ext) VALUES (?, ?, ?, ?)";
-        List<Object[]> args = new ArrayList<Object[]>(employees.size());
-        for (Employee employee : employees)
-        {
-            args.add(new Object[]{
-                    employee.getName(),
-                    employee.getWarehouseId(),
-                    EmployeeRoleMarshaller.marshall(employee.getRole()),
-                    employee.getExt()
-            });
-        }
-        simpleJdbcTemplate.batchUpdate(sql, args);
+        String sql = "SELECT employee_id, name, w_id, role, ext FROM em WHERE name = ?";
+        return simpleJdbcTemplate.query(sql, MAPPER, name);
     }
 
-    public void removeEmployee(String name) throws InvalidStateException
+    public void addEmployees(final List<Employee> employees) throws InvalidStateException
     {
-        String deleteEmployeeSql = "DELETE FROM em WHERE name = ?";
-        int rowsDeleted = simpleJdbcTemplate.update(deleteEmployeeSql, name);
+        final String sql = "INSERT INTO em (name, w_id, role, ext) VALUES (?, ?, ?, ?)";
+
+        for (final Employee employee : employees)
+        {
+            final KeyHolder keyHolder = new GeneratedKeyHolder();
+
+            int result = jdbcTemplate.update(new PreparedStatementCreator()
+            {
+                public PreparedStatement createPreparedStatement(Connection connection) throws SQLException
+                {
+                    PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+                    ps.setString(1,  employee.getName());
+                    ps.setInt(2, employee.getWarehouseId());
+                    ps.setString(3, EmployeeRoleMarshaller.marshall(employee.getRole()));
+                    ps.setString(4, employee.getExt());
+                    return ps;
+                }
+            }, keyHolder);
+
+            if (result != 1)
+            {
+                throw new InvalidStateException(String.format("Expected single row to be updated, but was: %s", result));
+            }
+        }
+    }
+
+    public void removeEmployee(int id) throws InvalidStateException
+    {
+        String deleteEmployeeSql = "DELETE FROM em WHERE employee_id = ?";
+        int rowsDeleted = simpleJdbcTemplate.update(deleteEmployeeSql, id);
         if (rowsDeleted == 0)
         {
             throw new EmptyResultDataAccessException(1);

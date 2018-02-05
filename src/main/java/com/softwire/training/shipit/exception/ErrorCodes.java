@@ -7,4 +7,5 @@ public class ErrorCodes
     public static final int INVALID_STATE = 3;
     public static final int INSUFFICIENT_STOCK = 4;
     public static final int MANIFEST_CREATION_EXCEPTION = 5;
+    public static final int MULTIPLE_ENTITIES_EXCEPTION = 6;
 }
